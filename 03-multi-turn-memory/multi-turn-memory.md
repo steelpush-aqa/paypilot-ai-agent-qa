@@ -1,32 +1,37 @@
 # Multi-turn memory
 
-The goal was to identify when important details are lost in a long support conversation, why this happens, and how the problem can be caught by a test.
+The test followed a customer dispute across a conversation that switches topics before returning to the original payment. The key question was when the details disappeared from the model's context, and when that loss began to affect the answer.
 
-### Scenario
+### Scenario and test design
 
-A customer reports that goods from a 240.00 EUR card payment never arrived. A few unrelated questions about the card limit and FX spread follow before the conversation returns to the dispute.
+The customer reports that goods from a 240.00 EUR card payment never arrived. Questions about the card limit and FX spread interrupt the dispute discussion. The stand summarises the conversation after two turns. In the defect profile, the summary can drop numbers (D06) or replace them with other values (D07).
 
-The stand summarises the conversation after two turns. In the defect profile, the summary can drop numbers (D06) or replace them with other values (D07).
+Five dialogue cases in [\`l05_dialogs.jsonl\`](l05_dialogs.jsonl) cover different conversation lengths, numbers of case details and topic changes. The checks look for the expected value and forbid likely substitutions, such as the second identical charge or a different reason code. Expected values come from the bank's engine rather than the agent's earlier reply.
 
-### What was built
+> The \`plan_role\` values are in Ukrainian because the course loader accepts only those labels: \`основний\` means main, \`найгірший\` means worst case, \`контроль\` means control, and \`ізоляція осі\` means axis isolation.
 
-- **A turn-by-turn record of what the model received.** The compacted summary from the `agent.summarize` span and the retrieval context were checked over five runs per scenario.
-- **Five dialogue cases** ([`l05_dialogs.jsonl`](l05_dialogs.jsonl)). They cover conversation length, the number of case details, and topic changes: a main scenario, a worst case, two cases isolating one variable at a time, and a control.
-- **Checks for the right value and the wrong value.** At a later turn, the test checks the expected value and also forbids a likely substitution, such as the second identical charge or a different reason code. Expected values come from the bank's engine, not the agent's earlier answer. Repeating the same mistake therefore does not make the test pass.
-- **Predictions recorded before each run.** The results were compared with those predictions afterwards.
+### Failure timeline
 
-> The `plan_role` values in the cases are in Ukrainian because the course loader accepts only those labels: `основний` means main, `найгірший` means worst case, `контроль` means control, and `ізоляція осі` means axis isolation.
+**Turns 1–2: The dispute details are established.** The customer identifies transaction TX-0401 for 240.00 EUR and explains that the goods never arrived.
 
-### Findings
+**After turn 2: The conversation is summarised.** The compaction code creates the summary at threshold + 1. In the defect runs, important details are missing from the model's input at turn 3 in all five runs.
 
-| # | What was found | Evidence |
-|---|---|---|
-| 1 | **The loss happened at the same turn every time.** The compaction code showed that the summary is created once per session, at turn threshold + 1. The case details were missing from the model's input at turn 3 in all five runs, but the customer-facing problem appeared at turn 5. The two replies in between looked normal. | Summary text from each run and the stand's `summarize.py` |
-| 2 | **A tool call can hide memory loss.** After the details disappeared from the summary, the agent called `get_transactions` and recovered the amount. The amount check passed, but the agent no longer knew which of two identical 240.00 EUR charges was being disputed. In all five runs, a check on the amount alone missed the problem. | Case H04 |
-| 3 | **A wrong value can be worse than a missing one.** When the summary dropped the amount, the agent fetched it again. When the defect changed it from 62.30 to 46.72, the agent used the wrong figure and quoted the customer the wrong fee. It corrected itself one turn later in two of five runs. | Control case H05: summary compared with reply |
-| 4 | **The checks needed adjustment too.** A literal reason-code check failed in four of five runs on the clean system because the agent wrote the code in words. The check was changed to allow for wording differences, a turn that could legitimately invite a mention of the second charge was removed, and a new prediction was written before rerunning. The main scenario then passed four of five clean runs and zero of five runs with the defect enabled. | Version 1 and version 2 run reports |
-| 5 | **An action risk was found that text checks would miss.** On the clean system, the agent filed a dispute without the explicit confirmation it had asked for. This was observed three times. Checking the response text is not enough here; the test needs to inspect the recorded action in the disputes table. | Trace from the filing turn |
+**Turns 3–4: The problem is not obvious yet.** The customer asks about the card limit and FX spread. The replies look normal, even though the summary has already lost details.
 
-### Cost
+**Turn 5: The memory failure becomes visible.** The agent calls \`get_transactions\` and recovers the amount, so an amount-only check passes. However, it no longer knows which of two identical 240.00 EUR charges is being disputed. In all five runs, checking only the amount missed the problem.
 
-The dialogue suite uses 180 agent turns per profile and costs about $0.17 to $0.19 per run, roughly four times the single-turn suite. It is best suited to pre-release checks and runs whenever the conversation-compaction code changes, rather than on every commit.
+**A separate substitution case: A wrong value leads to a wrong fee.** When the summary changed 62.30 to 46.72, the agent used the wrong figure and quoted the customer the wrong fee. It corrected itself one turn later in two of five runs.
+
+### What needed changing in the tests
+
+The first reason-code assertion failed in four of five clean runs because the agent expressed the code in words rather than using the literal code. The assertion was adjusted to allow wording differences. A turn that could reasonably prompt a mention of the second charge was removed, and a new prediction was recorded before rerunning.
+
+After those changes, the main scenario passed four of five clean runs and zero of five runs with the defect enabled. The clean-system failures were not hidden; the assertion was changed because it was checking wording rather than the underlying fact.
+
+### A separate action risk
+
+On the clean system, the agent filed a dispute without the explicit confirmation it had asked for. This happened three times. A text-only check would not be enough to catch it: the test needs to inspect the action recorded in the disputes table.
+
+### Cost and when to run it
+
+The dialogue suite uses 180 agent turns per profile and costs about $0.17 to $0.19 per run, roughly four times the single-turn suite. It is better suited to pre-release checks and to runs triggered by changes to conversation compaction than to every commit.
