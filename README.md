@@ -44,17 +44,26 @@ customer ──► agent (Claude Haiku) ──► tools: accounts · transaction
 
 ## 1. Golden dataset from real complaints
 
-*A golden dataset of 37 cases built from customer complaints and engine-derived edge cases, with an assertion
-ladder from exact checks to a human rubric, and a CI gate.* This section is still in progress.
+A test set built from customer complaints and from the bank's own rules rather than from the agent's answers:
+complaint triage, 22 cases with expected values derived from deterministic engines, and an assertion level and
+oracle documented for each case. Boundary cases exposed an all-or-nothing allowance rule worth 8.71 USD to the
+customer.
+**→ [Full write-up](01-golden-dataset/golden-dataset.md)** · [cases](01-golden-dataset/golden.jsonl) ·
+[generator extensions](01-golden-dataset/golden_extensions.py)
 
 ## 2. RAG failure localisation
 
-*Investigating where RAG answers fail: indexing, retrieval or generation. The analysis uses retrieved fragments and controlled comparisons, including the effect of `top_k` on retrieval quality and cost. This section is still in progress.
+Locating where a retrieval-augmented answer breaks: indexing, retrieval or generation — from the fragments the
+model actually received, with a one-variable proof of cause, a priced `top_k` trade-off, and 11 retrieval cases
+with expected answers taken verbatim from the documentation.
+**→ [Full write-up](02-rag-diagnostics/rag-diagnostics.md)** · [retrieval cases](02-rag-diagnostics/retrieval-cases.jsonl)
 
 ## 3. Multi-turn memory
 
-*Where a long conversation loses the case, why, and how to catch it automatically: a degradation profile,
-5 dialogue cases with invariants, and a test plan priced in agent turns.* This section is still in progress.
+Where a long conversation loses the case, why, and how to catch it automatically: a turn-by-turn degradation
+profile read from the compacted history, 5 dialogue cases with invariants and "forbid" rules, and a test plan
+priced in agent turns. The case was lost at turn 3 in every run, but became visible only at turn 5.
+**→ [Full write-up](03-multi-turn-memory/multi-turn-memory.md)** · [dialogue cases](03-multi-turn-memory/l05_dialogs.jsonl)
 
 ## Findings beyond the course
 
