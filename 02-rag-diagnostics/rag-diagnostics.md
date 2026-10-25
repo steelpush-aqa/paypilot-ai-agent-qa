@@ -1,36 +1,27 @@
 ## 2. RAG failure localisation
 
-*When an answer built on retrieved documents is wrong, find where it broke — indexing, retrieval or generation —
-from what the model actually received, and price each fix.*
+When an answer based on retrieved documents is wrong, I want to know where it went wrong: in indexing, retrieval or generation. The answer alone does not tell me that, so I checked the fragments the model actually received and compared fixes by cost.
 
-**Question.** A wrong answer looks the same whether the index cut a table in half, the search returned too little,
-or the model misused correct input. The fixes don't overlap: re-indexing, retrieval settings, a prompt change.
-How do you tell them apart, and what does each one cost?
+### What I tested
 
-### What I built
-
-- **Failure localisation with evidence from the retrieved fragments** — six failures (four controlled cases, two
-  customer complaints) classified by where they broke, each backed by the fragment ID and the excerpt the model
-  received, never by the wording of the answer.
-- **A one-variable proof of cause** — the same question, prompt, model, customer and `top_k`, with only the
-  index changed: recall dropped from 2 of 2 to 1 of 2 and the agent invented the missing limit.
-- **A `top_k` trade-off curve** — values 3, 4, 5 and 6, three runs each, with recall, precision and measured
-  input tokens per turn; chosen value and what it gives up.
-- **11 retrieval cases** ([`retrieval-cases.jsonl`](02-rag-diagnostics/retrieval-cases.jsonl)) — each expected
-  answer copied verbatim from a documentation row found by search, never from the agent's reply; the checked text
-  chosen so a wrong answer can't match it by accident (`60` can't match `120`).
+- **Six failure cases:** four controlled cases and two customer complaints. For each one, I recorded the failure category, fragment ID and excerpt passed to the model. I did not classify the failure from the final wording alone.
+- **A controlled index comparison:** I kept the question, prompt, model, customer and `top_k` the same and changed only the index. Recall fell from 2 of 2 to 1 of 2, and the agent made up the missing limit.
+- **A `top_k` comparison:** I tested values 3, 4, 5 and 6, with three runs at each setting. I recorded recall, precision and measured input tokens per turn, then compared the cost with the result.
+- **11 retrieval cases** ([`retrieval-cases.jsonl`](retrieval-cases.jsonl)). Each expected answer comes directly from a documentation row found by search, not from the agent. I chose the checked text so a similar-looking wrong value would not pass by accident. For example, `60` must not match `120`.
 
 ### Findings
 
-| # | Finding | Evidence |
+| # | What I found | Evidence |
 |---|---|---|
-| 1 | **The model's search query, not the user's language, decides retrieval.** Questions in Ukrainian and English produced the same English search query and therefore identical fragments, ranks and token counts. A retrieval loss the course expected at `top_k` 4 never happened, because it depended on a word the model never put into the query. | traces: search query per run |
-| 2 | **A cheap setting that isn't.** At `top_k` 3 the needed fragment fell off the list; in one run the agent searched a second time on its own and recovered — at 8,011 input tokens, 60% more than `top_k` 4 (4,995). | three runs at each `top_k` |
-| 3 | **Predicting failures from the index itself.** I rebuilt the broken index's slicing offline (newlines collapsed, cut every 160 characters) and it matched the fragments in the traces character for character — so before running, I knew which table rows were split, including one where a fee's name and its numbers landed in different fragments. | reconstruction vs trace fragments |
-| 4 | **The prediction was right on the count and wrong on the mechanism.** 9 of 11 retrieval cases failed under the defect profile, close to the predicted 8 — but in 7 of them the agent never searched at all: a prompt defect told it to answer fees "from memory". One answer even quoted that instruction back to the customer. | case-by-case: search span present or absent |
-| 5 | **Facts from an unmeasured source.** Asked for the list of dispute reason codes, the agent returned them in the order of the **tool schema's** enum, not the documentation's table — the list came from the tool definitions. Retrieval metrics can't see that channel. | answer order vs schema vs corpus |
-| 6 | **Checks that pass wrong answers.** A rounding defect was obeyed only half-way in 2 of 5 runs: the answer gave both the exact and the rounded total, so a numeric check found the exact one and passed. And a two-fact question checked on one fact passed with the second fact invented (a daily limit of EUR 50,000 instead of 20,000). | run reports |
+| 1 | **The model's search query matters more than the language of the question.** Questions in Ukrainian and English produced the same English search query. They also returned the same fragments, ranks and token counts. The retrieval loss expected by the course did not happen at `top_k` 4 because the model never put the relevant word into its query. | Search query recorded in each trace |
+| 2 | **The cheapest setting was not always the cheapest in practice.** At `top_k` 3, the needed fragment dropped out. In one run the agent searched again and recovered it, but that pushed input tokens to 8,011, around 60% more than `top_k` 4 at 4,995 tokens. | Three runs for each `top_k` value |
+| 3 | **I could predict some failures by rebuilding the index.** I reproduced the broken index's slicing offline: newlines were collapsed and the text was cut every 160 characters. The result matched the trace fragments character for character. Before running the test, I could see which table rows would be split, including a fee name separated from its values. | Offline reconstruction compared with trace fragments |
+| 4 | **The failure count was close to my prediction, but the cause was different.** Nine of 11 retrieval cases failed with the defect profile, close to the predicted eight. But in seven cases, the agent never searched at all. A prompt defect told it to answer fee questions "from memory". One answer even repeated that instruction to the customer. | Checked whether each run contained a search span |
+| 5 | **Some facts came from the tool schema, not the documents.** When asked for the dispute reason codes, the agent returned them in the order of the tool schema's enum, not the order in the documentation. Retrieval metrics cannot show information that came through the tool definitions instead. | Answer order compared with schema and documentation |
+| 6 | **Some of my checks passed answers that were still wrong.** With a rounding defect, two of five runs included both the exact and rounded totals. The numeric check found the exact total and passed. Another test checked one fact in a two-fact answer, so it passed even though the agent invented a daily limit of EUR 50,000 instead of EUR 20,000. | Individual run reports |
 
-**Decision.** `top_k` 4: complete answers in 3 of 3 runs at the lowest cost among the complete settings. The price
-is margin — the spread fragment sits at the last rank, so a differently worded query could push it out. A larger
-`top_k` does not rescue a broken index: at `top_k` 5 the broken index still lost the same row, at +616 tokens.
+### Decision
+
+I chose `top_k` 4. It produced complete answers in all three runs and was the lowest-cost setting among those that did so.
+
+There is a trade-off: the spread fragment sits at the last rank, so a differently worded query could push it out. Increasing `top_k` does not fix a broken index either. At `top_k` 5, the broken index still lost the same row and used 616 more tokens.
