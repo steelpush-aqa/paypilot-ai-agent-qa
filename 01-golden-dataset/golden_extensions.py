@@ -19,7 +19,7 @@ def allowance_left(cust):
 
 
 
-# HW2 — own cases
+# HW2  -  own cases
 # --------------------------------------------------------------------------
 
 def complaint_cases():
