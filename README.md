@@ -69,19 +69,26 @@ priced in agent turns. The case was lost at turn 3 in every run, but became visi
 
 The stand's defects are planted; these are things I found on top of them.
 
-- **One compaction per session.** Reading the stand's code showed the history is compacted exactly once, so the
-  turn at which the case is lost is fixed, not random.
-- **A green check on a broken memory.** An amount check passed because a tool re-fetched the amount, while the
-  agent no longer knew which of two identical charges was disputed.
-- **A substituted value is worse than a missing one.** A missing amount was re-fetched; a shifted amount was used,
+**Golden dataset** ([write-up](01-golden-dataset/golden-dataset.md))
+- **An all-or-nothing rule worth 8.71 USD.** Boundary cases showed that converting 1 EUR above the free allowance
+  puts the spread on the whole amount — and isolated a defect no mid-range case caught.
+- **A flaw in the evaluation tool.** The number-extraction helper behind numeric checks merges and drops numbers,
+  so a check can pass or fail for reasons unrelated to the answer.
+
+**RAG failure localisation** ([write-up](02-rag-diagnostics/rag-diagnostics.md))
+- **The search query, not the user's language, decides retrieval.** Questions in Ukrainian and English produced
+  the same English query, so an expected retrieval loss never happened.
+- **Failures predicted from the index itself.** An offline rebuild of the broken index matched the trace
+  fragments character for character, which told me before any run which table rows were split.
+- **Facts from an unmeasured source.** A list in the agent's answer came from the tool schema, not the
+  documentation, a channel retrieval metrics can't see.
+
+**Multi-turn memory** ([write-up](03-multi-turn-memory/multi-turn-memory.md))
+- **A green check on a broken memory.** A tool re-fetched the amount while the agent no longer knew which of two
+  identical charges was disputed.
+- **A substituted value is worse than a missing one.** A missing amount was re-fetched; a shifted one was used,
   and the customer was quoted a wrong fee.
-- **False positives traced and fixed by test design.** A check failing on the healthy system was diagnosed as a
-  wording problem and fixed, with a new prediction committed before the rerun.
 - **An unconfirmed write.** The healthy agent filed a dispute without the explicit confirmation it had asked for.
-- **The search query, not the user's language, decides retrieval.** Questions in English vs other languages produced the
-  same English search query.
-- **A cheap setting that isn't.** With a smaller `top_k`, the agent made an uninstructed second search, which cost
-  60% more than the larger setting.
 
 ## Limitations
 
