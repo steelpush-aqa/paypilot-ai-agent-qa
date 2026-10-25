@@ -2,7 +2,7 @@
 
 This project looks at how to test an AI support agent for a fictional neobank. The agent can look up accounts, make transfers, get FX quotes and handle disputes. It also retrieves information from the bank's internal documentation.
 
-I split the work into three parts: building a golden dataset from complaint scenarios, finding where RAG answers fail, and checking what the agent remembers across long conversations. I use traces and independent expected results, not the agent's own answers, to investigate failures.
+The work is split into three parts: building a golden dataset from complaint scenarios, finding where RAG answers fail, and checking what the agent remembers across long conversations. I use traces and independent expected results, not the agent's own answers, to investigate failures.
 
 ## Contents
 
@@ -35,13 +35,13 @@ customer --> agent (Claude Haiku) --> tools: accounts, transactions, limits, FX 
 | Check the inputs, not only the reply | Before blaming generation, I check the tool results, retrieved fragments and conversation summary the model actually received. |
 | Use an independent source of truth | Expected values come from the bank's engines, documentation or a human rubric, not from an earlier answer by the agent. |
 | Repeat variable cases | LLM responses can change between runs, so I report results such as "4 of 5" rather than relying on one run. |
-| Record predictions first | I write down what I expect before running a case, then explain any mismatch. |
-| Measure the cost | I record tokens and cost for each suite run and use that information to decide which checks belong in the daily suite and which should run before a release. |
+| Record predictions first | Write down what I expect before running a case, then explain any mismatch. |
+| Measure the cost | Record tokens and cost for each suite run and use that information to decide which checks belong in the daily suite and which should run before a release. |
 | Check the checks | When a test fails on the clean system, I investigate the assertion before assuming the agent is broken. |
 
 ## 1. Golden dataset
 
-I sorted 20 complaint scenarios by whether they were ready for automation, needed more context, or were not suitable. I then added 22 test cases with expected values derived from the bank's deterministic engines or human rubrics.
+20 complaint scenarios sorted by whether they were ready for automation, needed more context, or were not suitable. Then 22 test cases added with expected values derived from the bank's deterministic engines or human rubrics.
 
 The boundary cases caught an important FX rule: going 1 EUR over the free allowance applies the spread to the whole conversion, not just the extra euro.
 
@@ -51,13 +51,13 @@ The 22 cases published here are my additions. The daily-suite results in the rep
 
 ## 2. RAG diagnostics
 
-I investigated whether retrieval failures came from the index, the search results or the model's use of the retrieved text. The report includes six failure investigations, a controlled index comparison, a cost comparison for `top_k` settings, and 11 retrieval cases with expected text taken from the documentation.
+Investigated whether retrieval failures came from the index, the search results or the model's use of the retrieved text. The report includes six failure investigations, a controlled index comparison, a cost comparison for `top_k` settings, and 11 retrieval cases with expected text taken from the documentation.
 
 **[Read the report](02-rag-diagnostics/rag-diagnostics.md)** · [Retrieval cases](02-rag-diagnostics/retrieval-cases.jsonl)
 
 ## 3. Multi-turn memory
 
-I followed the conversation summary turn by turn to find when the agent lost details needed for a dispute. The report covers five dialogue cases, checks for missing and substituted values, and an action that was recorded without the confirmation the agent had requested.
+Followed the conversation summary turn by turn to find when the agent lost details needed for a dispute. The report covers five dialogue cases, checks for missing and substituted values, and an action that was recorded without the confirmation the agent had requested.
 
 **[Read the report](03-multi-turn-memory/multi-turn-memory.md)** · [Dialogue cases](03-multi-turn-memory/l05_dialogs.jsonl)
 
