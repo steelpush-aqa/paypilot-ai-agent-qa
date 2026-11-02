@@ -11,6 +11,7 @@ The work is split into three parts: building a golden dataset from complaint sce
 - [1. Golden dataset](#1-golden-dataset)
 - [2. RAG diagnostics](#2-rag-diagnostics)
 - [3. Multi-turn memory](#3-multi-turn-memory)
+- [4. Red teaming](#4-red-teaming)
 - [Findings](#findings)
 - [Limitations](#limitations)
 
@@ -60,6 +61,15 @@ Investigated whether retrieval failures came from the index, the search results 
 Followed the conversation summary turn by turn to find when the agent lost details needed for a dispute. The report covers five dialogue cases, checks for missing and substituted values, and an action that was recorded without the confirmation the agent had requested.
 
 **[Read the report](03-multi-turn-memory/multi-turn-memory.md)** · [Dialogue cases](03-multi-turn-memory/l05_dialogs.jsonl)
+
+## 4. Red teaming
+
+Attacking each input channel of an LLM banking agent, mapping findings to the OWASP LLM Top 10, and turning
+each into a regression test priced for CI. Seven security cases (prompt leakage, indirect injection via tool
+data, statement exfiltration, a multi-turn AML-threshold leak, plus a control), each classified by input
+vector with evidence from tool-call spans, not reply text. Priority by business impact, not by how dramatic
+the attack looks.
+**→ [Full write-up](04-red-teaming/red-teaming.md)** · [security cases](04-red-teaming/l06_security.jsonl)
 
 ## Findings
 
