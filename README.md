@@ -13,6 +13,7 @@ The work is split into three parts: building a golden dataset from complaint sce
 - [3. Multi-turn memory](#3-multi-turn-memory)
 - [4. Red teaming](#4-red-teaming)
 - [5. Tool-call testing](#5-tool-call-testing)
+- [6. Observability and cost](#6-observability-and-cost)
 - [Findings](#findings)
 - [Limitations](#limitations)
 
@@ -47,7 +48,7 @@ customer --> agent (Claude Haiku) --> tools: accounts, transactions, limits, FX 
 
 The boundary cases caught an important FX rule: going 1 EUR over the free allowance applies the spread to the whole conversion, not just the extra euro.
 
-**[Read the report](01-golden-dataset/golden-dataset.md)** · [Test cases](01-golden-dataset/golden.jsonl) · [Generator changes](01-golden-dataset/golden_extensions.py)
+**[Full write-up](01-golden-dataset/golden-dataset.md)** · [Test cases](01-golden-dataset/golden.jsonl) · [Generator changes](01-golden-dataset/golden_extensions.py)
 
 The 22 cases published here are my additions. The daily-suite results in the report cover a larger suite, including the course's starter cases. The base generator and starter cases are not included in this repository, so the published extension is not runnable on its own.
 
@@ -55,13 +56,13 @@ The 22 cases published here are my additions. The daily-suite results in the rep
 
 Investigated whether retrieval failures came from the index, the search results or the model's use of the retrieved text. The report includes six failure investigations, a controlled index comparison, a cost comparison for `top_k` settings, and 11 retrieval cases with expected text taken from the documentation.
 
-**[Read the report](02-rag-diagnostics/rag-diagnostics.md)** · [Retrieval cases](02-rag-diagnostics/retrieval-cases.jsonl)
+**[Full write-up](02-rag-diagnostics/rag-diagnostics.md)** · [Retrieval cases](02-rag-diagnostics/retrieval-cases.jsonl)
 
 ## 3. Multi-turn memory
 
 Followed the conversation summary turn by turn to find when the agent lost details needed for a dispute. The report covers five dialogue cases, checks for missing and substituted values, and an action that was recorded without the confirmation the agent had requested.
 
-**[Read the report](03-multi-turn-memory/multi-turn-memory.md)** · [Dialogue cases](03-multi-turn-memory/l05_dialogs.jsonl)
+**[Full write-up](03-multi-turn-memory/multi-turn-memory.md)** · [Dialogue cases](03-multi-turn-memory/l05_dialogs.jsonl)
 
 ## 4. Red teaming
 
@@ -71,13 +72,19 @@ data, statement exfiltration, a multi-turn AML-threshold leak, plus a control), 
 vector with evidence from tool-call spans, not reply text. Priority by business impact, not by how dramatic
 the attack looks.
 
-**→ [Full write-up](04-red-teaming/red-teaming.md)** · [security cases](04-red-teaming/l06_security.jsonl)
+**→ [Full write-up](04-red-teaming/red-teaming.md)** · [Security cases](04-red-teaming/l06_security.jsonl)
 
 ## 5. Tool-call testing
 
 Verifying what the agent *did* through tool-call spans and the database row after a write, not what it *said*. One requirement (escalate, dispute) becomes two checks at different prices: a deterministic one daily, a model-choice one before release. Six scenarios of my own, each checking the call, its arguments, the order, the result contract, or the stored row, never the reply text. A dispute filed on the wrong account or in the wrong currency is green in the reply and the call, red only in the database. 
 
-**→ [Full write-up](05-tool-call-testing/tool-call-testing.md) · [scenarios](05-tool-call-testing/scenarios.jsonl)
+**→ [Full write-up](05-tool-call-testing/tool-call-testing.md) · [Scenarios](05-tool-call-testing/scenarios.jsonl)
+
+## 6. Observability and cost
+
+Proving what an agent really costs when its own cost field can lie. Three independent price sources (the system's self-report, the sum of model-call spans, the provider's bill) cross-check each other; the trace is the referee. A retry loop makes the counter undercount 5x; a context replay adds ~29% while every price agrees and every answer stays correct. Silent cost leaks become red tests through a per-dialogue budget, and a model migration is judged by dialogue cost, not list price. 
+
+**→ [Full write-up](06-observability-cost/observability-cost.md) · [Budget cases](06-observability-cost/budget_cases.jsonl)
 
 ## Findings
 
@@ -97,6 +104,17 @@ These are the main issues I found while working through the cases. The stand als
 - **The amount check passed while the case details were lost.** The agent fetched the amount again but no longer knew which of two identical charges was being disputed.
 - **A substituted amount led to a wrong fee.** The agent used the changed value before correcting itself later.
 - **A dispute was filed without confirmation.** The clean agent took the action even though the customer had not given the explicit confirmation it had asked for.
+
+**Tool-call testing**
+- **A correct reply over a wrong write.** A dispute filed on the customer's twin account (wrong account, wrong currency) is green in the reply and in the call arguments; only the database row shows it. The same shape appears as a wrong-currency write under a separate defect.
+- **A garbled tool result becomes a forbidden write.** When the eligibility check returns an unreadable result, the agent opens a dispute that should have been refused, in 5 of 5 runs. The contract break is caught deterministically; the behaviour it causes needs five runs.
+- **A lying tool description steers tool choice.** With the limits tool marked "deprecated" and transactions "authoritative", the agent answers an affordability question from history instead of the limits tool, caught by a sequence check, not the reply.
+
+**Observability and cost**
+
+- **The counter lies.** A hidden retry loop makes the system's own cost field undercount a step ~5x; the span-sum and the provider bill agree on the real figure. Caught by counting identical tool calls.
+- **Tests green, bill grows.** Re-reading the context every step adds ~29% with correct answers, unchanged latency, and all three prices agreeing. Only a token budget catches it.
+- **List price is not dialogue cost.** A model 3-5x cheaper per token is only ~30% cheaper per dialogue, its threshold goes blind on the other tokenizer, and the median hides a 120x-cost tail run.
 
 ## Limitations
 
