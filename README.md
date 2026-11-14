@@ -12,6 +12,7 @@ The work is split into three parts: building a golden dataset from complaint sce
 - [2. RAG diagnostics](#2-rag-diagnostics)
 - [3. Multi-turn memory](#3-multi-turn-memory)
 - [4. Red teaming](#4-red-teaming)
+- [5. Tool-call testing](#5-tool-call-testing)
 - [Findings](#findings)
 - [Limitations](#limitations)
 
@@ -69,7 +70,14 @@ each into a regression test priced for CI. Seven security cases (prompt leakage,
 data, statement exfiltration, a multi-turn AML-threshold leak, plus a control), each classified by input
 vector with evidence from tool-call spans, not reply text. Priority by business impact, not by how dramatic
 the attack looks.
+
 **→ [Full write-up](04-red-teaming/red-teaming.md)** · [security cases](04-red-teaming/l06_security.jsonl)
+
+## 5. Tool-call testing
+
+Verifying what the agent *did* through tool-call spans and the database row after a write, not what it *said*. One requirement (escalate, dispute) becomes two checks at different prices: a deterministic one daily, a model-choice one before release. Six scenarios of my own, each checking the call, its arguments, the order, the result contract, or the stored row, never the reply text. A dispute filed on the wrong account or in the wrong currency is green in the reply and the call, red only in the database. 
+
+**→ [Full write-up](05-tool-call-testing/tool-call-testing.md) · [scenarios](05-tool-call-testing/scenarios.jsonl)
 
 ## Findings
 
