@@ -119,6 +119,6 @@ These are the main issues I found while working through the cases. The stand als
 ## Limitations
 
 - This is a training stand with a fictional bank and planted defects. The testing methods may transfer to other systems, but the specific figures and failures are from this stand.
-- I used Claude Haiku 4.5 for projects 1 and 2, and Haiku 5.5 for project 3. Results may differ with other models.
+- Models differ across projects: Claude Haiku 4.5 for projects 1 and 2; Haiku 5.5 for projects 3, 5 and 6, with Gemini 2.5 Flash as the migration comparison in project 6. Results may differ with other models, and token counts and costs are not comparable between models with different tokenizers.
 - Five runs per case help show variation, but are not enough to estimate a low failure rate precisely.
 - The full reports, run data and commit history are available in the original course project repositories, which are in Ukrainian.
