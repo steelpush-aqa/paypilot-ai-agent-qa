@@ -14,6 +14,7 @@ The work is split into three parts: building a golden dataset from complaint sce
 - [4. Red teaming](#4-red-teaming)
 - [5. Tool-call testing](#5-tool-call-testing)
 - [6. Observability and cost](#6-observability-and-cost)
+- [7. LLM as a judge](#7-llm-as-a-judge)
 - [Findings](#findings)
 - [Limitations](#limitations)
 
@@ -86,6 +87,12 @@ Proving what an agent really costs when its own cost field can lie. Three indepe
 
 **→ [Full write-up](06-observability-cost/observability-cost.md)** · [Budget cases](06-observability-cost/budget_cases.jsonl)
 
+## 7. LLM as a judge
+ 
+Running the oracle a code assertion cannot: whether an escalation names a human, promises no outcome, and gives no internal reason. A judge model rules on the wording, but only after it is calibrated, 30 cases labeled blind, agreement and self-consistency reported with a Wilson interval, the blind spot named, and the fix priced. The judge is a different vendor from the agent so it cannot prefer its own family, and its one stable miss is routed by case class, not by vote margin.
+ 
+**→ [Full write-up](07-llm-as-judge/llm-as-judge.md)** · [Labeled set](07-llm-as-judge/l09_labels.jsonl)
+
 ## Findings
 
 These are the main issues I found while working through the cases. The stand also has planted defects, so I distinguish those from issues in my own evaluation setup.
@@ -111,10 +118,14 @@ These are the main issues I found while working through the cases. The stand als
 - **A lying tool description steers tool choice.** With the limits tool marked "deprecated" and transactions "authoritative", the agent answers an affordability question from history instead of the limits tool, caught by a sequence check, not the reply.
 
 **Observability and cost**
-
 - **The counter lies.** A hidden retry loop makes the system's own cost field undercount a step ~5x; the span-sum and the provider bill agree on the real figure. Caught by counting identical tool calls.
 - **Tests green, bill grows.** Re-reading the context every step adds ~29% with correct answers, unchanged latency, and all three prices agreeing. Only a token budget catches it.
 - **List price is not dialogue cost.** A model 3-5x cheaper per token is only ~30% cheaper per dialogue, its threshold goes blind on the other tokenizer, and the median hides a 120x-cost tail run.
+
+**LLM as a judge**
+- **A high score is not trust.** The judge agrees with my labels 0.97 (29 of 30), but the trust comes from the ±0.08 interval, 20 of 20 on the obvious cases, and 9 of 10 on the disputed ones that actually test judgement.
+- **The blind spot had a direction.** Every disagreement was the judge being too lenient, counting vague wording as a named human. For escalation that is the dangerous direction, so the fix tightened the rubric even at the cost of portability.
+- **A stable miss needs a class route.** The judge fails one case 5 of 5 (an implicit "customers usually get their money back"), so a split-vote rule never catches it; it is routed to a human by case class instead.
 
 ## Limitations
 
