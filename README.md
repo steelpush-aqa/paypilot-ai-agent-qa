@@ -2,7 +2,7 @@
 
 This project looks at how to test an AI support agent for a fictional neobank. The agent can look up accounts, make transfers, get FX quotes and handle disputes. It also retrieves information from the bank's internal documentation.
 
-The work is split into three parts: building a golden dataset from complaint scenarios, finding where RAG answers fail, and checking what the agent remembers across long conversations. I use traces and independent expected results, not the agent's own answers, to investigate failures.
+The work is a growing series of focused projects, each testing a different facet of the agent: the data it retrieves, what it remembers, the actions it takes, how it withstands attack, what it costs, and how its free-text answers are judged. Throughout, I use traces and independent expected results, not the agent's own answers, to investigate failures. The full list is in the contents below.
 
 ## Contents
 
