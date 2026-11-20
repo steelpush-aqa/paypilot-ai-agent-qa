@@ -15,6 +15,7 @@ The work is a growing series of focused projects, each testing a different facet
 - [5. Tool-call testing](#5-tool-call-testing)
 - [6. Observability and cost](#6-observability-and-cost)
 - [7. LLM as a judge](#7-llm-as-a-judge)
+- [8. Local LLM judge](#8-local-llm-judge)
 - [Findings](#findings)
 - [Limitations](#limitations)
 
@@ -93,6 +94,12 @@ Running the oracle a code assertion cannot: whether an escalation names a human,
  
 **→ [Full write-up](07-llm-as-judge/llm-as-judge.md)** · [Labeled set](07-llm-as-judge/l09_labels.jsonl)
 
+## 8. Local LLM judge
+
+Moving the project-7 judge off a cloud model and onto a local one, so the answer text it scores never leaves the bank's perimeter. Same frozen 30-case set and rubric, only the model changes, so the two judges are measured on one ruler. The local judge scores lower (0.80 vs 0.97), but their Wilson intervals overlap, so on 30 cases it is not provably worse; the decision goes to the miss distribution and to data residency, not the average. Cost moves from money to time (free, but 10.9 s/call), and the model's tag is pinned to a digest so a library update can't swap the weights under a passing test.
+
+**→ [Full write-up](08-local-llm-judge/local-llm-judge.md)** · [Calibration reports](08-local-llm-judge/)
+
 ## Findings
 
 These are the main issues I found while working through the cases. The stand also has planted defects, so I distinguish those from issues in my own evaluation setup.
@@ -127,9 +134,14 @@ These are the main issues I found while working through the cases. The stand als
 - **The blind spot had a direction.** Every disagreement was the judge being too lenient, counting vague wording as a named human. For escalation that is the dangerous direction, so the fix tightened the rubric even at the cost of portability.
 - **A stable miss needs a class route.** The judge fails one case 5 of 5 (an implicit "customers usually get their money back"), so a split-vote rule never catches it; it is routed to a human by case class instead.
 
+**Local LLM judge**
+- **Lower score, but not distinguishable.** Local 0.80 (0.63–0.90) vs cloud 0.97 (0.83–0.99); the Wilson intervals overlap, so on 30 cases the local judge is not provably worse — the decision goes to the miss distribution, not the average.
+- **The cost moved from money to time.** Local is free per run but 10.9 s/call run serially; the cloud judge is cents and sub-second, run in parallel. Money was never the deciding axis — the data perimeter was.
+- **The model is part of the contract.** A thinking model that broke JSON until reasoning was disabled, a 6.6 GB file, CPU re-quantization without AVX-512, and a tag pinned to a digest so an update can't silently swap the weights.
+
 ## Limitations
 
 - This is a training stand with a fictional bank and planted defects. The testing methods may transfer to other systems, but the specific figures and failures are from this stand.
-- Models differ across projects: Claude Haiku 4.5 for projects 1 and 2; Haiku 5.5 for projects 3, 5 and 6, with Gemini 2.5 Flash as the migration comparison in project 6. Results may differ with other models, and token counts and costs are not comparable between models with different tokenizers.
+- Models differ across projects: Claude Haiku 4.5 for projects 1 and 2; Haiku 5.5 for projects 3, 5 and 6, with Gemini 2.5 Flash as the migration comparison in project 6. Projects 7 and 8 use a separate-vendor judge over a GPT-5-mini agent — Claude Haiku 4.5 in the cloud (project 7) and a local qwen3.5:9b served by Ollama (project 8). Results may differ with other models, and token counts and costs are not comparable between models with different tokenizers.
 - Five runs per case help show variation, but are not enough to estimate a low failure rate precisely.
 - The full reports, run data and commit history are available in the original course project repositories, which are in Ukrainian.
