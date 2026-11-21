@@ -1,0 +1,98 @@
+# L11 mutant list — 12 mutants, three per class, frozen before the first run.
+# Each mutant is one small change: id · class · file · find · replace · description.
+
+[[mutant]]
+id = "A-01"
+class = "tier value"
+file = "app/engines/policy.py"
+find = '"tier2": 0.9'
+replace = '"tier2": 1.5'
+description = "tier2 customer pays 1.5% instead of 0.9% (same effect as defect D20)"
+
+[[mutant]]
+id = "A-02"
+class = "tier value"
+file = "app/engines/policy.py"
+find = '"tier1": 1.5'
+replace = '"tier1": 0.9'
+description = "tier1 customer pays 0.9% instead of 1.5%"
+
+[[mutant]]
+id = "A-03"
+class = "tier value"
+file = "app/engines/policy.py"
+find = '"tier2": 1000'
+replace = '"tier2": 500'
+description = "tier2 free allowance becomes EUR 500 instead of EUR 1000"
+
+[[mutant]]
+id = "B-01"
+class = "EUR 1000 boundary"
+file = "app/engines/fx.py"
+find = 'amount_eur <= allowance_total'
+replace = 'amount_eur < allowance_total'
+description = "spread taken exactly on the limit (<= changed to <)"
+
+[[mutant]]
+id = "B-02"
+class = "EUR 1000 boundary"
+file = "app/engines/fx.py"
+find = 'allowance_used_eur + amount_eur <= allowance_total'
+replace = 'amount_eur <= allowance_total'
+description = "already-used allowance ignored in the boundary check"
+
+[[mutant]]
+id = "B-03"
+class = "EUR 1000 boundary"
+file = "app/engines/fx.py"
+find = 'allowance_used_eur + amount_eur <= allowance_total'
+replace = 'allowance_used_eur + amount <= allowance_total'
+description = "boundary measured in the raw amount, not the EUR equivalent"
+
+[[mutant]]
+id = "C-01"
+class = "arithmetic"
+file = "app/engines/fx.py"
+find = 'gross - spread_amount'
+replace = 'gross + spread_amount'
+description = "spread added to gross instead of subtracted"
+
+[[mutant]]
+id = "C-02"
+class = "arithmetic"
+file = "app/engines/fx.py"
+find = 'gross * spread_pct / 100.0'
+replace = 'gross * spread_pct / 10.0'
+description = "spread divided by 10 instead of 100 (10x larger)"
+
+[[mutant]]
+id = "C-03"
+class = "arithmetic"
+file = "app/engines/fx.py"
+find = 'amount * rate'
+replace = 'amount / rate'
+description = "gross computed by dividing by the rate instead of multiplying"
+
+[[mutant]]
+id = "D-01"
+class = "result shape"
+file = "app/engines/fx.py"
+find = 'allowance_applied=within'
+replace = 'allowance_applied=True'
+description = "allowance_applied always True instead of the actual value"
+
+[[mutant]]
+id = "D-02"
+class = "result shape"
+file = "app/engines/fx.py"
+find = 'round(v, 6)'
+replace = 'str(round(v, 6))'
+description = "as_dict() returns strings instead of numbers"
+
+[[mutant]]
+id = "D-03"
+class = "result shape"
+file = "app/engines/fx.py"
+find = 'isinstance(v, float)'
+replace = 'isinstance(v, int)'
+description = "as_dict() stops rounding floats (type check changed to int)"

@@ -16,6 +16,7 @@ The work is a growing series of focused projects, each testing a different facet
 - [6. Observability and cost](#6-observability-and-cost)
 - [7. LLM as a judge](#7-llm-as-a-judge)
 - [8. Local LLM judge](#8-local-llm-judge)
+- [9. Mutation testing](#9-mutation-testing)
 - [Findings](#findings)
 - [Limitations](#limitations)
 
@@ -100,6 +101,12 @@ Moving the project-7 judge off a cloud model and onto a local one, so the answer
 
 **→ [Full write-up](08-local-llm-judge/local-llm-judge.md)** · [Calibration reports](08-local-llm-judge/)
 
+## 9. Mutation testing
+
+Judging a test set by what it kills, not by what it covers. The bank's FX pricing module gets a frozen list of 12 planted bugs in four classes, committed before any test runs. Two suites are measured on that one ruler: a manual set I designed, with expected values written in from the tariff table, and an AI-generated set from a deliberately weak one-line prompt. The generated suite reached 100% line coverage but killed only 8 of 12 mutants, against the manual suite's 64% coverage and 10 kills, so coverage and catching-ability diverge. The assistant is strong on result shape and blind on tier values, because its tests read the spread from the same table the code reads, which is why six written criteria reject 14 of its 26 tests, mostly for that oracle trap. The union of both suites kills all 12.
+
+**→ [Full write-up](09-mutation-testing/mutation-testing.md)** · [Mutant list](09-mutation-testing/mutants.toml) · [Test sets](09-mutation-testing/)
+
 ## Findings
 
 These are the main issues I found while working through the cases. The stand also has planted defects, so I distinguish those from issues in my own evaluation setup.
@@ -139,9 +146,15 @@ These are the main issues I found while working through the cases. The stand als
 - **The cost moved from money to time.** Local is free per run but 10.9 s/call run serially; the cloud judge is cents and sub-second, run in parallel. Money was never the deciding axis — the data perimeter was.
 - **The model is part of the contract.** A thinking model that broke JSON until reasoning was disabled, a 6.6 GB file, CPU re-quantization without AVX-512, and a tag pinned to a digest so an update can't silently swap the weights.
 
+**Mutation testing**
+- **Coverage is not catching-ability.** The AI-generated suite had 100% line coverage but killed 8 of 12 mutants; the manual suite had 64% coverage and killed 10. More tests and more coverage did not mean a better set.
+- **The oracle-from-the-system trap.** 8 of the 14 rejected generated tests read their expected value from the same tariff table the code reads, so they stay green even when that table is wrong, and cannot kill any tier-value mutant.
+- **Strong on shape, blind on values.** The assistant killed 3 of 3 result-shape mutants but 0 of 3 tier-value mutants; the manual set was the mirror (3 of 3 tier value, 1 of 3 shape). The union kills all 12, so the assistant earns a place on specific classes, not as a replacement.
+
 ## Limitations
 
 - This is a training stand with a fictional bank and planted defects. The testing methods may transfer to other systems, but the specific figures and failures are from this stand.
-- Models differ across projects: Claude Haiku 4.5 for projects 1 and 2; Haiku 5.5 for projects 3, 5 and 6, with Gemini 2.5 Flash as the migration comparison in project 6. Projects 7 and 8 use a separate-vendor judge over a GPT-5-mini agent — Claude Haiku 4.5 in the cloud (project 7) and a local qwen3.5:9b served by Ollama (project 8). Results may differ with other models, and token counts and costs are not comparable between models with different tokenizers.
+- Models differ across projects: Claude Haiku 4.5 for projects 1 and 2; Haiku 5.5 for projects 3, 5 and 6, with Gemini 2.5 Flash as the migration comparison in project 6. Projects 7 and 8 use a separate-vendor judge over a GPT-5-mini   agent — Claude Haiku 4.5 in the cloud (project 7) and a local qwen3.5:9b served by Ollama (project 8). Project 9 tests no agent at all: it mutation-tests the FX pricing module, with the test generation done by claude-sonnet-5-5. Results may differ with other models, and token counts and costs are not comparable between models with different tokenizers.
 - Five runs per case help show variation, but are not enough to estimate a low failure rate precisely.
 - The full reports, run data and commit history are available in the original course project repositories, which are in Ukrainian.
+- The project-9 mutation score is relative to a fixed 12-mutant list, so a defect class absent from that list stays invisible however high the score.

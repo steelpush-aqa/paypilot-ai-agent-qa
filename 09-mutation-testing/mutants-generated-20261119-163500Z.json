@@ -1,0 +1,115 @@
+{
+  "set": "generated",
+  "paths": [
+    "tests/generated"
+  ],
+  "started_at": "2026-11-19T18:35:00.799018+02:00",
+  "mutants_file": "mutants.toml",
+  "mutants_git": {
+    "committed_at": "2026-11-19T14:48:15+02:00",
+    "commit": "4364351",
+    "uncommitted": false,
+    "head": "0d9f6b9"
+  },
+  "killed": 8,
+  "total": 12,
+  "mutation_score": 0.6667,
+  "by_class": {
+    "значення тіру": {
+      "total": 3,
+      "killed": 0
+    },
+    "межа EUR 1 000": {
+      "total": 3,
+      "killed": 2
+    },
+    "арифметика": {
+      "total": 3,
+      "killed": 3
+    },
+    "форма результату": {
+      "total": 3,
+      "killed": 3
+    }
+  },
+  "survived": [
+    "A-01",
+    "A-02",
+    "A-03",
+    "B-03"
+  ],
+  "rows": [
+    {
+      "id": "A-01",
+      "class": "значення тіру",
+      "description": "клієнт tier2 платить 1.5 % замість 0.9 % (наслідок як у дефекту D20)",
+      "killed": false
+    },
+    {
+      "id": "A-02",
+      "class": "значення тіру",
+      "description": "клієнт tier1 платить 0.9% замість 1.5%",
+      "killed": false
+    },
+    {
+      "id": "A-03",
+      "class": "значення тіру",
+      "description": "безкоштовний ліміт tier2 став EUR 500 замість EUR 1000",
+      "killed": false
+    },
+    {
+      "id": "B-01",
+      "class": "межа EUR 1 000",
+      "description": "рівно на межі ліміту вже береться спред (<= замінено на <)",
+      "killed": true
+    },
+    {
+      "id": "B-02",
+      "class": "межа EUR 1 000",
+      "description": "вже використаний ліміт ігнорується при перевірці межі",
+      "killed": true
+    },
+    {
+      "id": "B-03",
+      "class": "межа EUR 1 000",
+      "description": "межа рахується в сирій сумі, а не в EUR-еквіваленті",
+      "killed": false
+    },
+    {
+      "id": "C-01",
+      "class": "арифметика",
+      "description": "спред додається до gross замість віднімання",
+      "killed": true
+    },
+    {
+      "id": "C-02",
+      "class": "арифметика",
+      "description": "спред поділено на 10 замість 100 (у 10 разів більший)",
+      "killed": true
+    },
+    {
+      "id": "C-03",
+      "class": "арифметика",
+      "description": "gross рахується діленням на курс замість множення",
+      "killed": true
+    },
+    {
+      "id": "D-01",
+      "class": "форма результату",
+      "description": "allowance_applied завжди True замість фактичного значення",
+      "killed": true
+    },
+    {
+      "id": "D-02",
+      "class": "форма результату",
+      "description": "as_dict() повертає рядки замість чисел",
+      "killed": true
+    },
+    {
+      "id": "D-03",
+      "class": "форма результату",
+      "description": "as_dict() не округлює float (перевірка типу змінена на int)",
+      "killed": true
+    }
+  ]
+}
